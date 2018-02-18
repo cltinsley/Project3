@@ -18,7 +18,7 @@ public:
 
 private:
     std::vector<Actor*> actors; // vector of each actor that exists within the screen
-    Actor* m_nachenBlaster; // pointer to our NachenBlaster
+    NachenBlaster* m_nachenBlaster; // pointer to our NachenBlaster
 };
 
 #endif // STUDENTWORLD_H_

@@ -28,6 +28,20 @@ void Star::doSomething() {
     }
 }
 
+// Explosion Implementations ---------------------------------------
+void Explosion::doSomething() {
+    double currentSize = getSize();
+    setSize(currentSize*1.5); // increase size
+    m_age++;
+    if(m_age>=4) { // destroy explosion 4 ticks after creation
+        setDead();
+    }
+}
+
+// NACHENBLASTER Implementations ----------------------------------
+NachenBlaster::~NachenBlaster() {
+    
+}
 
 
 
