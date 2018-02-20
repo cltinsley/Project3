@@ -1,5 +1,4 @@
 #include "Actor.h"
-#include "StudentWorld.h"
 #include <math.h>
 
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
@@ -22,10 +21,11 @@ bool Actor::didCollide(Actor& other) {
 // Star Implementations --------------------------------------------
 void Star::doSomething() {
     int x = getX() - 1;
-    moveTo(x, getY()); // move one pixel to the left
-    if(x<=-1) { // if the star is off the screen, mark it as dead
+    if(x<-1) { // if the star is off the screen, mark it as dead and don't move it
         setDead();
+        return;
     }
+    moveTo(x, getY()); // move one pixel to the left
 }
 
 // Explosion Implementations ---------------------------------------
@@ -39,9 +39,55 @@ void Explosion::doSomething() {
 }
 
 // NACHENBLASTER Implementations ----------------------------------
-NachenBlaster::~NachenBlaster() {
-    
+Explosion::Explosion(double x, double y, StudentWorld* world)
+: Actor(IID_EXPLOSION, x, y, 0, 1, 0, world) {
+    m_age = 0;
+    //m_world = getWorld();
 }
+
+NachenBlaster::~NachenBlaster() {} // does nothing right now, will update
+
+void NachenBlaster::doSomething() {
+    if(!isAlive())
+        return; // return immediately if the nachenblaster is dead (may he rest in peace)
+    if(cabbageEnergy<30)
+        cabbageEnergy++; // nachenblaster gets one cabbage energy point per tick (assuming its not full)
+    
+    int key; // this variable will store the key pressed by the user
+    if(getWorld()->getKey(key)) {
+        switch(key) {
+            case KEY_PRESS_UP : {
+                double newY = getY() + 6; // new space in upward direction
+                if(newY < VIEW_HEIGHT) { // this is a valid move
+                    moveTo(getX(), newY);
+                }
+            }
+                break;
+            case KEY_PRESS_DOWN : {
+                double newY = getY() - 6; // new space downward
+                if(newY >= 0) { // this is a valid move
+                    moveTo(getX(), newY);
+                }
+            }
+                break;
+            case KEY_PRESS_LEFT : {
+                double newX = getX() - 6; // new space to the left
+                if(newX >= 0) { // this is a valid move
+                    moveTo(newX, getY());
+                }
+            }
+                break;
+            case KEY_PRESS_RIGHT : {
+                double newX = getX() + 6; // new space to the right
+                if(newX < VIEW_WIDTH) { // this is a valid move
+                    moveTo(newX, getY());
+                }
+            }
+                break;
+        }
+    }
+}
+
 
 
 

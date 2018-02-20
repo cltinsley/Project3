@@ -82,6 +82,10 @@ public:
 	{
 		return m_assetDir;
 	}
+    
+    GameWorld* getWorld() {
+        return this;
+    }
 	
 private:
 	unsigned int	m_lives;

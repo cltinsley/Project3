@@ -8,17 +8,24 @@
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
+class Actor;
+
 class StudentWorld : public GameWorld
 {
 public:
     StudentWorld(std::string assetDir);
+    ~StudentWorld();
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    
+    StudentWorld* getWorld() { return this; }
 
 private:
     std::vector<Actor*> actors; // vector of each actor that exists within the screen
-    NachenBlaster* m_nachenBlaster; // pointer to our NachenBlaster
+    Actor* m_nachenBlaster; // pointer to our NachenBlaster
+    int level;
+    int aliensRemaining;
 };
 
 #endif // STUDENTWORLD_H_
