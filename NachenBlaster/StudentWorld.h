@@ -9,6 +9,7 @@
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
 class Actor;
+class NachenBlaster;
 
 class StudentWorld : public GameWorld
 {
@@ -19,13 +20,21 @@ public:
     virtual int move();
     virtual void cleanUp();
     
+    void introduceNewObjects();
+    void updateText();
+    int countAliens();
+    void createStar(double x, double y);
+    void createExplosion(double x, double y);
+
     StudentWorld* getWorld() { return this; }
+    NachenBlaster* getNachenBlaster() { return m_nachenBlaster; }
+    void decreaseRemainingAliens() { m_aliensRemaining--; }
+    
 
 private:
     std::vector<Actor*> actors; // vector of each actor that exists within the screen
-    Actor* m_nachenBlaster; // pointer to our NachenBlaster
-    int level;
-    int aliensRemaining;
+    NachenBlaster* m_nachenBlaster = nullptr; // pointer to our NachenBlaster
+    int m_aliensRemaining;
 };
 
 #endif // STUDENTWORLD_H_
