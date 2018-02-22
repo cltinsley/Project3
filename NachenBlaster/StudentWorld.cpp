@@ -89,6 +89,22 @@ void StudentWorld::createExplosion(double x, double y) {
     actors.push_back(new Explosion(x, y, this));
 }
 
+void StudentWorld::createRepairGoodie(double x, double y) {
+    actors.push_back(new RepairGoodie(x, y, this));
+}
+
+void StudentWorld::createTorpedoGoodie(double x, double y) {
+    actors.push_back(new TorpedoGoodie(x, y, this));
+}
+
+void StudentWorld::createExtraLifeGoodie(double x, double y) {
+    actors.push_back(new ExtraLifeGoodie(x, y, this));
+}
+
+void StudentWorld::createCabbage(double x, double y) {
+    actors.push_back(new Cabbage(x, y, this));
+}
+
 void StudentWorld::introduceNewObjects() {
     if(randInt(1, 15) == 15) { // 1/15 chance to introduce new star
         createStar((VIEW_WIDTH-1), randInt(0, (VIEW_HEIGHT-1))); // new star on far right with random y
@@ -108,21 +124,21 @@ void StudentWorld::introduceNewObjects() {
             actors.push_back(new Smoregon(VIEW_WIDTH-1, randInt(0, VIEW_HEIGHT-1), this));
         }
         else {
-            // add a new snagglegon
+            actors.push_back(new Snagglegon(VIEW_WIDTH-1, randInt(0, VIEW_HEIGHT-1), this));
         }
     }
 }
 
-void StudentWorld::updateText() {
-    std::string gameText = "Lives: ";
-    gameText += std::to_string(getLives()) + "  Health: ";
+void StudentWorld::updateText() { // creates and updates the text line displayed on top of the screen
+    string gameText = "Lives: ";
+    gameText += to_string(getLives()) + "  Health: ";
     int health = (m_nachenBlaster->getHP()/m_nachenBlaster->getMaxHP())*100; // formula for % health
-    gameText += std::to_string(health)+"%  Score: ";
-    gameText += std::to_string(getScore()) + "  Level: ";
-    gameText += std::to_string(getLevel()) + "  Cabbages: ";
+    gameText += to_string(health)+"%  Score: ";
+    gameText += to_string(getScore()) + "  Level: ";
+    gameText += to_string(getLevel()) + "  Cabbages: ";
     int cabbages = (m_nachenBlaster->getCabbageEnergy()/30.0)*100; // formula for % cabbages
-    gameText += std::to_string(cabbages)+"%  Torpedoes: ";
-    gameText += std::to_string(m_nachenBlaster->getnumTorpedoes());
+    gameText += to_string(cabbages)+"%  Torpedoes: ";
+    gameText += to_string(m_nachenBlaster->getnumTorpedoes());
     setGameStatText(gameText);
 }
 
@@ -137,4 +153,18 @@ int StudentWorld::countAliens() {
         ptr++;
     }
     return numAliens;
+}
+
+vector<Actor*> StudentWorld::getAliens() {
+    vector<Actor*> aliens;
+    vector<Actor*>::iterator ptr;
+    ptr = actors.begin();
+    while(ptr!=actors.end()) {
+        if((*ptr)->isAlien()) {
+            Actor* temp = (*ptr);
+            aliens.push_back(temp);
+        }
+        ptr++;
+    }
+    return aliens;
 }

@@ -1,5 +1,6 @@
 #include "Actor.h"
 #include <math.h>
+using namespace std;
 
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
 
@@ -53,7 +54,12 @@ Ship::Ship(int imageID, double x, double y, int direction, double size, int dept
 void Ship::decreaseHP(double amount) {
     m_hp -= amount;
     if(m_hp <= 0) {
-        setDead();
+        if(isAlien()) {
+            kill();
+        }
+        else {
+            setDead();
+        }
     }
 }
 
@@ -114,6 +120,9 @@ void NachenBlaster::doSomething() {
             case KEY_PRESS_SPACE : {
                 if(cabbageEnergy>=5) {
                     cabbageEnergy -= 5;
+                    StudentWorld* world = getWorld();
+                    world->createCabbage(getX()+12, getY());
+                    world->playSound(SOUND_PLAYER_SHOOT);
                 }
             }
         }
@@ -121,13 +130,64 @@ void NachenBlaster::doSomething() {
 }
 
 // Alien Implementations --------------------------------------------------
-Alien::Alien(int imageID, double x, double y, double size, StudentWorld* world, int maxHP, double travelSpeed, double flightPlan, int planLength) : Ship(imageID, x, y, 0, size, 1, world, maxHP) {
+Alien::Alien(int imageID, double x, double y, double size, StudentWorld* world, int maxHP, double travelSpeed, double flightPlan, int planLength, int points) : Ship(imageID, x, y, 0, size, 1, world, maxHP) {
     m_travelSpeed = travelSpeed;
     m_flightPlan = flightPlan;
     m_planLength = planLength;
+    m_points = points;
 }
 
-void Alien::setNewPlan() {
+bool Alien::mostOfDoSomething(int type) {
+    // 1. check if dead, if so return immediately
+    if(getHP() <= 0 || !isAlive()) {
+        setDead();
+        return true;
+    }
+    
+    double x = getX();
+    if(x<0) { // 2. check if alien has flown off the screen
+        setDead();
+        return true;
+    }
+    
+    // 3. Check for collision with nachenblaster/nachenblaster's projectiles
+    int points, damage;
+    if(type == SMALL || type == SMORE) {
+        points = 250;
+        damage = 5;
+    }
+    else {
+        points = 1000;
+        damage = 15;
+    }
+    if(checkCollisions(points, damage)) { // smallgons/smoregons are worth 250 points and do 5 damage points if they collide with the nachenblaster
+        return true; // we don't do anything else because this ship is dead
+    }
+    
+    // 4. check to see if our plan has expired or if we need a new one because of our y coordinate
+    if(getPlanLength()<=0 || getY()>=(VIEW_HEIGHT-1) || getY()<=0)
+        setNewPlan(type);
+    
+    // 5. see if you gotta shoot the nachenblaster ***NEED TO IMPLEMENT***
+    
+    
+    // 6. Try to move:
+    double speed = getSpeed(); // the current flight speed
+    double plan = getPlan();  // the current flight plan
+    double newX = x - speed; // we move left every time
+    double newY = getY() + speed*plan; // plan tells us if we move up, down or neither using 1, -1, or 0
+    moveTo(newX, newY);
+    if(type == SMALL || type == SMORE)
+        decrementPlanLength(); // shorten the plan by 1 each time it moves (Snaggles don't have plans)
+    
+    // 7. repeat step 3, see if the move resulted in a collision
+    if(checkCollisions(points, damage)) {
+        return true;
+    }
+    return false;
+}
+
+void Alien::setNewPlan(int type) {
     double y = getY();
     if(y >= (VIEW_HEIGHT-1)) {
         m_flightPlan = -1;
@@ -138,7 +198,8 @@ void Alien::setNewPlan() {
     else { // this is the case where the flight plan has expired
         m_flightPlan = randInt(-1, 1); // gives a random choice of -1, 0, 1
     }
-    m_planLength = randInt(1, 32); // set the plan length to a random number between 1 and 32
+    if(type == SMALL || type == SMORE)
+        m_planLength = randInt(1, 32); // set the plan length to a random number between 1 and 32
 }
 
 bool Alien::checkCollisions(int score, int damage) { // returns true when the alien is killed from the collision
@@ -146,109 +207,78 @@ bool Alien::checkCollisions(int score, int damage) { // returns true when the al
     NachenBlaster* nb = world->getNachenBlaster();
     if(didCollide(*nb)) { // checks if the given alien collided with the nachenblaster
         nb->decreaseHP(damage); // damage the nachenblaster
-        setDead(); // kill the alien
-        world->increaseScore(score); // increase player score by 250
-        world->decreaseRemainingAliens(); // decrease remaining aliens
-        world->playSound(SOUND_DEATH);
-        world->createExplosion(getX(), getY()); // introduce new explosion where the ship was
+        kill(); // execure code for alien death
         return true;
     }
     return false;
 }
 
+void Alien::kill() {
+    setDead();
+    StudentWorld* world = getWorld();
+    world->increaseScore(m_points);
+    world->decreaseRemainingAliens();
+    world->playSound(SOUND_DEATH);
+    world->createExplosion(getX(), getY());
+}
+
+
 // Smallgon Implementations -----------------------------------------------
-Smallgon::Smallgon(double x, double y, StudentWorld* world) : Alien(IID_SMALLGON, x, y, 1.5, world, -1, 2, 0, 0) {
+Smallgon::Smallgon(double x, double y, StudentWorld* world) : Alien(IID_SMALLGON, x, y, 1.5, world, -1, 2, 0, 0, 250) {
     int level = world->getLevel();
     double hp = 5 * (1 + (level - 1)*.1); // hp formula for smallgon
     setHP(hp); // set the ship's max hp according to the formula
 }
 
 void Smallgon::doSomething() {
-    // 1. check if dead, if so return immediately
-    if(getHP() <= 0 || !isAlive()) {
-        setDead();
-        return;
-    }
-    
-    double x = getX();
-    if(x<0) { // 2. check if smallgon has flown off the screen
-        setDead();
-        return;
-    }
-    
-    // 3. Check for collision with nachenblaster/nachenblaster's projectiles
-    if(checkCollisions(250, 5)) { // smallgons are worth 250 points and do 5 damage points if they collide with the nachenblaster
-        return; // we don't do anything else because this ship is dead
-    }
-    
-    // 4. check to see if our plan has expired or if we need a new one because of our y coordinate
-    if(getPlanLength()<=0 || getY()>=(VIEW_HEIGHT-1) || getY()<=0)
-        setNewPlan();
-    
-    // 5. see if you gotta shoot the nachenblaster ***NEED TO IMPLEMENT***
-    
-    // 6. Try to move:
-    double speed = getSpeed(); // the current flight speed
-    double plan = getPlan();  // the current flight plan
-    double newX = x - speed; // we move left every time
-    double newY = getY() + speed*plan; // plan tells us if we move up, down or neither using 1, -1, or 0
-    moveTo(newX, newY);
-    decrementPlanLength(); // shorten the plan by 1 each time it moves
-    
-    // 7. repeat step 3, see if the move resulted in a collision
-    checkCollisions(250, 5);
+    mostOfDoSomething(SMALL);
 }
 
 // Smoregon Implementations -----------------------------------------------
 Smoregon::Smoregon(double x, double y, StudentWorld* world)
-: Alien(IID_SMOREGON, x, y, 1.5, world, -1, 2.0, 0, 0) {
+: Alien(IID_SMOREGON, x, y, 1.5, world, -1, 2.0, 0, 0, 250) {
     int level = world->getLevel();
-    double hp = 5 * (1 + (level - 1)*.1); // hp formula for smallgon
+    double hp = 5 * (1 + (level - 1)*.1); // hp formula for snagglegon
     setHP(hp); // set the ship's max hp according to the formula
 }
 
 void Smoregon::doSomething() {
-    // 1. check if dead, if so return immediately
-    if(getHP() <= 0 || !isAlive()) {
-        setDead();
-        return;
-    }
-    
-    double x = getX();
-    if(x<0) { // 2. check if smoregon has flown off the screen
-        setDead();
-        return;
-    }
-    
-    // 3. Check for collision with nachenblaster/nachenblaster's projectiles
-    if(checkCollisions(250, 5)) { // smoregons are worth 250 points and do 5 damage points if they collide with the nachenblaster
-        dropGoodies();
-        return; // we don't do anything else because this ship is dead
-    }
-    
-    // 4. check to see if our plan has expired or if we need a new one because of our y coordinate
-    if(getPlanLength()<=0 || getY()>=(VIEW_HEIGHT-1) || getY()<=0)
-        setNewPlan();
-    
-    // 5. see if you gotta shoot the nachenblaster ***NEED TO IMPLEMENT***
-    
-    // 6. Try to move:
-    double speed = getSpeed(); // the current flight speed
-    double plan = getPlan();  // the current flight plan
-    double newX = x - speed; // we move left every time
-    double newY = getY() + speed*plan; // plan tells us if we move up, down or neither using 1, -1, or 0
-    moveTo(newX, newY);
-    decrementPlanLength(); // shorten the plan by 1 each time it moves
-    
-    // 7. repeat step 3, see if the move resulted in a collision
-    if(checkCollisions(250, 5)) {
+    if(mostOfDoSomething(SMORE)) {
         dropGoodies();
     }
 }
 
 void Smoregon::dropGoodies() {
-    // does nothing now, wait till goodies are implemented
+    if(randInt(1, 30) <= 10) { // 1/3 chance to drop a goodie
+        if(randInt(1,20) <= 10) { // 1/2 chance to drop repair gooide, else drop torpedo goodie
+            getWorld()->createRepairGoodie(getX(), getY());
+        }
+        else {
+            getWorld()->createTorpedoGoodie(getX(), getY());
+        }
+    }
 }
+
+// Snagglegon Implementations -----------------------------------------------
+Snagglegon::Snagglegon(double x, double y, StudentWorld* world)
+: Alien(IID_SNAGGLEGON, x, y, 1.5, world, -1, 1.75, -1, 999, 1000) {
+    int level = world->getLevel();
+    double hp = 10 * (1 + (level - 1)*.1); // hp formula for smallgon
+    setHP(hp); // set the ship's max hp according to the formula
+}
+
+void Snagglegon::doSomething() {
+    if(mostOfDoSomething(SNAGGLE)) {
+        dropLifeGoodie();
+    }
+}
+
+void Snagglegon::dropLifeGoodie() {
+    if(randInt(1, 6) == 1) { // 1/6 chance to drop a life goodie
+        getWorld()->createExtraLifeGoodie(getX(), getY());
+    }
+}
+
 
 // Goodie Implementations ------------------------------------------------------
 bool Goodie::pickUp() {
@@ -297,3 +327,67 @@ void TorpedoGoodie::doSomething() {
         getWorld()->getNachenBlaster()->increaseNumTorpedoes(5);
     }
 }
+
+// Extra Life Goodie Implementations -----------------------------------------------
+void ExtraLifeGoodie::doSomething() {
+    if(makeMove()) {
+        getWorld()->incLives();
+    }
+}
+
+//  Projectile Implementations -----------------------------------------------
+Projectile::Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage) : Actor(imageID, x, y, dir, .5, 1, world) {
+    m_moveDist = moveDist;
+    m_damage = damage;
+}
+
+void Projectile::doSomething() {
+    if(!isAlive()) {
+        return;
+    }
+    double x = getX();
+    if(x<0 || x>=VIEW_WIDTH) { // check if projectile flew off screen
+        setDead();
+        return;
+    }
+    if(checkCollision(m_damage)) {
+        return;
+    }
+    moveTo(x+m_moveDist, getY());
+    setDirection(getDirection()+20); // rotate counter clockwise
+    checkCollision(m_damage);
+}
+
+bool Projectile::checkCollision(int damage) {
+    if(m_moveDist<0) { // indicates that the projectile was fired by an alien, so we check nachenblaster
+        NachenBlaster* nb = getWorld()->getNachenBlaster();
+        if(didCollide(*nb)) {
+            nb->decreaseHP(damage);
+            setDead();
+            return true;
+        }
+    }
+    else { // this projectile was fired by the nachenblaster
+        vector<Actor*> aliens = getWorld()->getAliens();
+        vector<Actor*>::iterator ptr;
+        ptr = aliens.begin();
+        while(ptr!=aliens.end()) {
+            if(didCollide(**ptr)) {
+                (*ptr)->decreaseHP(damage);
+                setDead();
+                return true;
+            }
+            ptr++;
+        }
+    }
+    return false;
+}
+
+
+
+
+
+
+
+
+

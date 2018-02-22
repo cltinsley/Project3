@@ -4,8 +4,13 @@
 #include "GraphObject.h"
 #include "StudentWorld.h"
 #include "GameConstants.h"
+#include <vector>
 
 class StudentWorld;
+
+const int SMALL       = 1;
+const int SMORE       = 2;
+const int SNAGGLE     = 3;
 
 // ACTOR definition ----------------------------------------------------------------------------
 class Actor : public GraphObject {
@@ -19,8 +24,10 @@ public:
     
     virtual ~Actor() {}
     virtual void doSomething() = 0;
+    virtual void decreaseHP(double amount) {} // by default actors have no HP so this does nothing
     virtual bool canCollide() { return false; } // by default, actors cannot collide with each other
     virtual bool isAlien() { return false; } // by default, actors are not aliens
+    
     
     StudentWorld* getWorld() { return m_world; } // returns the world that the actor is in
     bool isAlive() { return m_alive; }
@@ -63,11 +70,12 @@ public:
     virtual ~Ship() {}
     virtual void doSomething() = 0; // different ships do different things
     
+    virtual void kill() {}
     virtual bool canCollide() { return true; } // ships can collide with each other and other objects
     double getHP() { return m_hp; } // returns ship's current hp
     double getMaxHP() { return m_maxHP; }
     void setHP(double maxHP);
-    void decreaseHP(double amount); 
+    void decreaseHP(double amount);
     void increaseHP(double amount);
     
 private:
@@ -97,21 +105,24 @@ private:
 // ALIEN definition ----------------------------------------------------------------------------
 class Alien : public Ship {
 public:
-    Alien(int imageID, double x, double y, double size, StudentWorld* world, int maxHP, double travelSpeed, double flightPlan, int planLength);
+    Alien(int imageID, double x, double y, double size, StudentWorld* world, int maxHP, double travelSpeed, double flightPlan, int planLength, int score);
     
+    virtual void kill();
+    bool mostOfDoSomething(int type); // handles the common parts of dosomething for aliens, returns true if alien dies
     double getSpeed() { return m_travelSpeed; }
     double getPlan() { return m_flightPlan; }
     int getPlanLength() { return m_planLength; }
     void decrementPlanLength() { m_planLength--; }
     void setPlan(double newPlan) { m_flightPlan = newPlan; }
     virtual bool isAlien() { return true; }
-    virtual void setNewPlan();
+    virtual void setNewPlan(int type);
     bool checkCollisions(int score, int damage); // returns true when alien dies as a result of a collision, increases the score and damage to the nachenblaster appropriately
     
 private:
     double m_travelSpeed; // keeps track of the travel speed
     double m_flightPlan; // keeps track of the flight plan
     int m_planLength; // the length of the flight plan
+    int m_points; // keeps track of the points awarded opon death
 };
 
 
@@ -129,6 +140,15 @@ public:
     virtual void doSomething();
     void dropGoodies();
 };
+
+// SMOREGON definition ----------------------------------------------------------------------------
+class Snagglegon : public Alien {
+public:
+    Snagglegon(double x, double y, StudentWorld* world);
+    virtual void doSomething();
+    void dropLifeGoodie();
+};
+
 
 // GOODIE definition ------------------------------------------------------------------------------
 class Goodie : public Actor {
@@ -148,7 +168,7 @@ public:
     virtual void doSomething();
 };
 
-
+// TORPEDO GOODIE definition -----------------------------------------------------------------------
 class TorpedoGoodie : public Goodie {
 public:
     TorpedoGoodie(double x, double y, StudentWorld* world) :
@@ -156,7 +176,37 @@ public:
     virtual void doSomething();
 };
 
+// EXTRA LIFE GOODIE definition -----------------------------------------------------------------------
+class ExtraLifeGoodie : public Goodie {
+public:
+    ExtraLifeGoodie(double x, double y, StudentWorld* world) :
+    Goodie(IID_LIFE_GOODIE, x, y, world) { }
+    virtual void doSomething();
+};
 
+// PROJECTILE definition -----------------------------------------------------------------------
+class Projectile : public Actor {
+public:
+    Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage);
+    virtual void doSomething();
+    bool checkCollision(int damage);
+private:
+    int m_moveDist; // holds the number of pixels the projectile moves per turn (negative if it goes left)
+    int m_damage; // stores how much damage the projectile does
+};
+
+// CABBAGE definition -----------------------------------------------------------------------
+class Cabbage : public Projectile {
+public:
+    Cabbage(double x, double y, StudentWorld* world) :
+    Projectile(IID_CABBAGE, x, y, world, 8, 0, 2) { }
+};
+
+// CABBAGE definition -----------------------------------------------------------------------
+class Turnip : public Projectile {
+    Turnip(double x, double y, StudentWorld* world) :
+    Projectile(IID_TURNIP, x, y, world, -6, 0, 2) { }
+};
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
