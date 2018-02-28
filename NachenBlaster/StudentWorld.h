@@ -29,6 +29,8 @@ public:
     void createTorpedoGoodie(double x, double y);
     void createExtraLifeGoodie(double x, double y);
     void createCabbage(double x, double y);
+    void createTurnip(double x, double y);
+    void createTorpedo(double x, double y, int moveSpeed, int direction);
     std::vector<Actor*> getAliens();
     
     StudentWorld* getWorld() { return this; }

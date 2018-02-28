@@ -202,10 +202,18 @@ public:
     Projectile(IID_CABBAGE, x, y, world, 8, 0, 2) { }
 };
 
-// CABBAGE definition -----------------------------------------------------------------------
+// TURNIP definition -----------------------------------------------------------------------
 class Turnip : public Projectile {
+public:
     Turnip(double x, double y, StudentWorld* world) :
     Projectile(IID_TURNIP, x, y, world, -6, 0, 2) { }
+};
+
+// TORPEDO definition -----------------------------------------------------------------------
+class Torpedo : public Projectile {
+public:
+    Torpedo(double x, double y, int moveSpeed, int direction, StudentWorld* world) :
+    Projectile(IID_TORPEDO, x, y, world, moveSpeed, direction, 8) { }
 };
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp

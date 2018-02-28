@@ -103,6 +103,17 @@ void StudentWorld::createExtraLifeGoodie(double x, double y) {
 
 void StudentWorld::createCabbage(double x, double y) {
     actors.push_back(new Cabbage(x, y, this));
+    playSound(SOUND_PLAYER_SHOOT);
+}
+
+void StudentWorld::createTurnip(double x, double y) {
+    actors.push_back(new Turnip(x, y, this));
+    playSound(SOUND_ALIEN_SHOOT);
+}
+
+void StudentWorld::createTorpedo(double x, double y, int moveSpeed, int direction) {
+    actors.push_back(new Torpedo(x, y, moveSpeed, direction, this));
+    playSound(SOUND_TORPEDO);
 }
 
 void StudentWorld::introduceNewObjects() {

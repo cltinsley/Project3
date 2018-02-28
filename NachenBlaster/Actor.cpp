@@ -120,11 +120,17 @@ void NachenBlaster::doSomething() {
             case KEY_PRESS_SPACE : {
                 if(cabbageEnergy>=5) {
                     cabbageEnergy -= 5;
-                    StudentWorld* world = getWorld();
-                    world->createCabbage(getX()+12, getY());
-                    world->playSound(SOUND_PLAYER_SHOOT);
+                    getWorld()->createCabbage(getX()+12, getY());
                 }
             }
+                break;
+            case KEY_PRESS_TAB : {
+                if(numTorpedoes>0) {
+                    numTorpedoes--;
+                    getWorld()->createTorpedo(getX()+12, getY(), 8, 0);
+                }
+            }
+                break;
         }
     }
 }
@@ -168,14 +174,34 @@ bool Alien::mostOfDoSomething(int type) {
     if(getPlanLength()<=0 || getY()>=(VIEW_HEIGHT-1) || getY()<=0)
         setNewPlan(type);
     
-    // 5. see if you gotta shoot the nachenblaster ***NEED TO IMPLEMENT***
-    
+    // 5. see if you gotta shoot the nachenblaster
+    StudentWorld* world = getWorld();
+    NachenBlaster* nb = world->getNachenBlaster();
+    if(nb->getX() < getX() && (nb->getY()-4) <= getY() && getY() <= (nb->getY()+4)) { // check that nachenblaster is directly in front of the alien
+        if(type == SMALL || type == SMORE) {
+            int odds = (20/(world->getLevel())) + 5;
+            if(randInt(1, odds) == 1) {
+                world->createTurnip(getX()-14, getY());
+                return false;
+            }
+            if(type == SMORE && randInt(1, odds) == 1) { // smoregons have a chance to accelerate towards the player
+                m_flightPlan = 0;
+                m_planLength = VIEW_WIDTH;
+                m_travelSpeed = 5.0;
+            }
+        }
+        else if(type == SNAGGLE) {
+            int odds = (15/(world->getLevel())) + 10;
+            if(randInt(1, odds) == 1) {
+                world->createTorpedo(getX(), getY(), -8, 180);
+                return false;
+            }
+        }
+    }
     
     // 6. Try to move:
-    double speed = getSpeed(); // the current flight speed
-    double plan = getPlan();  // the current flight plan
-    double newX = x - speed; // we move left every time
-    double newY = getY() + speed*plan; // plan tells us if we move up, down or neither using 1, -1, or 0
+    double newX = x - m_travelSpeed; // we move left every time
+    double newY = getY() + m_travelSpeed*m_flightPlan; // plan tells us if we move up, down or neither using 1, -1, or 0
     moveTo(newX, newY);
     if(type == SMALL || type == SMORE)
         decrementPlanLength(); // shorten the plan by 1 each time it moves (Snaggles don't have plans)
@@ -354,7 +380,8 @@ void Projectile::doSomething() {
         return;
     }
     moveTo(x+m_moveDist, getY());
-    setDirection(getDirection()+20); // rotate counter clockwise
+    if(m_moveDist>-7 && m_moveDist<7)
+        setDirection(getDirection()+20); // rotate counter clockwise
     checkCollision(m_damage);
 }
 
