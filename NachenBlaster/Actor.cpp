@@ -12,7 +12,7 @@ bool Actor::didCollide(Actor& other) {
     double x2 = other.getX();
     double y2 = other.getY();
     double r2 = other.getRadius();
-    double distance = pow((pow((x1-x2), 2)+pow((y1-y2), 2)), 0.5);
+    double distance = pow((pow((x1-x2), 2)+pow((y1-y2), 2)), 0.5); // euclidian distance formula
     if(distance < (.75*(r1+r2))) {
         return true;
     }
@@ -55,7 +55,7 @@ void Ship::decreaseHP(double amount) {
     m_hp -= amount;
     if(m_hp <= 0) {
         if(isAlien()) {
-            kill();
+            kill(); // different protocol for the death of an alien
         }
         else {
             setDead();
@@ -117,9 +117,9 @@ void NachenBlaster::doSomething() {
                 }
             }
                 break;
-            case KEY_PRESS_SPACE : {
+            case KEY_PRESS_SPACE : { // we want to fire a cabbage
                 if(cabbageEnergy>=5) {
-                    cabbageEnergy -= 5;
+                    cabbageEnergy -= 5; // 5 cabbage energy needed to fire a cabbage
                     getWorld()->createCabbage(getX()+12, getY());
                 }
             }
@@ -143,7 +143,7 @@ Alien::Alien(int imageID, double x, double y, double size, StudentWorld* world, 
     m_points = points;
 }
 
-bool Alien::mostOfDoSomething(int type) {
+bool Alien::mostOfDoSomething(int type) { // returns true if the alien is dead after this turn
     // 1. check if dead, if so return immediately
     if(getHP() <= 0 || !isAlive()) {
         setDead();
@@ -158,15 +158,15 @@ bool Alien::mostOfDoSomething(int type) {
     
     // 3. Check for collision with nachenblaster/nachenblaster's projectiles
     int points, damage;
-    if(type == SMALL || type == SMORE) {
+    if(type == SMALL || type == SMORE) { // smallgons and smoregons are worth 250 points and do 5 damage in a collision with the nachenblaster
         points = 250;
         damage = 5;
     }
-    else {
+    else { // snagglegons are worth 1000 points and do 15 damage if they collide with nachenblaster
         points = 1000;
         damage = 15;
     }
-    if(checkCollisions(points, damage)) { // smallgons/smoregons are worth 250 points and do 5 damage points if they collide with the nachenblaster
+    if(checkCollisions(points, damage)) {
         return true; // we don't do anything else because this ship is dead
     }
     
@@ -179,7 +179,7 @@ bool Alien::mostOfDoSomething(int type) {
     NachenBlaster* nb = world->getNachenBlaster();
     if(nb->getX() < getX() && (nb->getY()-4) <= getY() && getY() <= (nb->getY()+4)) { // check that nachenblaster is directly in front of the alien
         if(type == SMALL || type == SMORE) {
-            int odds = (20/(world->getLevel())) + 5;
+            int odds = (20/(world->getLevel())) + 5; // odds that smallgon/smoregon will fire a cabbage in a given tick
             if(randInt(1, odds) == 1) {
                 world->createTurnip(getX()-14, getY());
                 return false;
@@ -191,7 +191,7 @@ bool Alien::mostOfDoSomething(int type) {
             }
         }
         else if(type == SNAGGLE) {
-            int odds = (15/(world->getLevel())) + 10;
+            int odds = (15/(world->getLevel())) + 10; // odds that snagglegon will fire a torpedo
             if(randInt(1, odds) == 1) {
                 world->createTorpedo(getX(), getY(), -8, 180);
                 return false;
@@ -269,8 +269,8 @@ Smoregon::Smoregon(double x, double y, StudentWorld* world)
 }
 
 void Smoregon::doSomething() {
-    if(mostOfDoSomething(SMORE)) {
-        dropGoodies();
+    if(mostOfDoSomething(SMORE)) { // returns true if the smoregon dies during this turn
+        dropGoodies(); // if it's dead, drop goodies
     }
 }
 
@@ -295,7 +295,7 @@ Snagglegon::Snagglegon(double x, double y, StudentWorld* world)
 
 void Snagglegon::doSomething() {
     if(mostOfDoSomething(SNAGGLE)) {
-        dropLifeGoodie();
+        dropLifeGoodie(); // if the snagglegon dies during the turn, drop a goodie
     }
 }
 
@@ -307,13 +307,13 @@ void Snagglegon::dropLifeGoodie() {
 
 
 // Goodie Implementations ------------------------------------------------------
-bool Goodie::pickUp() {
+bool Goodie::pickUp() { // returns true if the goodie gets picked up by nachenblaster, false if not
     StudentWorld* world = getWorld();
     NachenBlaster* nb = world->getNachenBlaster();
     if(didCollide(*nb)) {
         world->increaseScore(100); // player gets 100 points for picking up a goodie
-        setDead();
-        world->playSound(SOUND_GOODIE);
+        setDead(); // let the goodie be removed next turn
+        world->playSound(SOUND_GOODIE); // play sound when picked up
         return true;
     }
     return false;
@@ -326,15 +326,15 @@ bool Goodie::makeMove() {
     }
     double x = getX();
     double y = getY();
-    if(x<0 || y<0) {
+    if(x<0 || y<0) { // check if goodie has moved off screen
         setDead();
         return false;
     }
-    if(pickUp()) {
+    if(pickUp()) { // check if its picked up at the current position
         return true;
     }
-    moveTo(x-.75, y-.75);
-    if(pickUp()) {
+    moveTo(x-.75, y-.75); // move left and down
+    if(pickUp()) { // check if its picked up at the new location
         return true;
     }
     return false;
@@ -342,32 +342,33 @@ bool Goodie::makeMove() {
 
 // Repair Goodie Implementations -----------------------------------------------
 void RepairGoodie::doSomething() {
-    if(makeMove()) {
-        getWorld()->getNachenBlaster()->increaseHP(10);
+    if(makeMove()) { // true when goodie has been picked up
+        getWorld()->getNachenBlaster()->increaseHP(10); // repair goodie rewards 10 hp
     }
 }
 
 // Torpedo Goodie Implementations -----------------------------------------------
 void TorpedoGoodie::doSomething() {
     if(makeMove()) {
-        getWorld()->getNachenBlaster()->increaseNumTorpedoes(5);
+        getWorld()->getNachenBlaster()->increaseNumTorpedoes(5); // torpedo goodie rewards 5 torpedos
     }
 }
 
 // Extra Life Goodie Implementations -----------------------------------------------
 void ExtraLifeGoodie::doSomething() {
     if(makeMove()) {
-        getWorld()->incLives();
+        getWorld()->incLives(); // extra life goodie rewards and extra life (shocking)
     }
 }
 
 //  Projectile Implementations -----------------------------------------------
-Projectile::Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage) : Actor(imageID, x, y, dir, .5, 1, world) {
-    m_moveDist = moveDist;
-    m_damage = damage;
+Projectile::Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage, bool rotates) : Actor(imageID, x, y, dir, .5, 1, world) {
+    m_moveDist = moveDist; // keep track of how far projectile moves each turn (also direction of move)
+    m_damage = damage; // keeps track of how much damage a particular projectile does
+    m_rotates = rotates;
 }
 
-void Projectile::doSomething() {
+void Projectile::doSomething() { // executes code for everything a projectile has to do in a turn
     if(!isAlive()) {
         return;
     }
@@ -376,35 +377,43 @@ void Projectile::doSomething() {
         setDead();
         return;
     }
-    if(checkCollision(m_damage)) {
+    if(checkCollision(m_damage)) { // do nothing else this turn if we collided
         return;
     }
+    
     moveTo(x+m_moveDist, getY());
-    if(m_moveDist>-7 && m_moveDist<7)
+    
+    if(m_rotates) // condition will be true for cabbages and turnips (torpedoes don't rotate)
         setDirection(getDirection()+20); // rotate counter clockwise
     checkCollision(m_damage);
 }
 
-bool Projectile::checkCollision(int damage) {
+bool Projectile::checkCollision(int damage) { // returns true if the projectile collides with something
     if(m_moveDist<0) { // indicates that the projectile was fired by an alien, so we check nachenblaster
         NachenBlaster* nb = getWorld()->getNachenBlaster();
         if(didCollide(*nb)) {
             nb->decreaseHP(damage);
+            if(nb->isAlive()) {
+                getWorld()->playSound(SOUND_BLAST); // sound when a ship is damaged but not killed
+            }
             setDead();
             return true;
         }
     }
     else { // this projectile was fired by the nachenblaster
-        vector<Actor*> aliens = getWorld()->getAliens();
+        vector<Actor*> aliens = getWorld()->getAliens(); // get all the actors that might collide with the projectile
         vector<Actor*>::iterator ptr;
         ptr = aliens.begin();
-        while(ptr!=aliens.end()) {
-            if(didCollide(**ptr)) {
-                (*ptr)->decreaseHP(damage);
-                setDead();
-                return true;
+        while(ptr!=aliens.end()) { // check each separate value for a collision
+            if(didCollide(**ptr)) { // check if we collided with the current alien
+                (*ptr)->decreaseHP(damage); // do damage to the alien
+                if((*ptr)->isAlive()) {
+                    getWorld()->playSound(SOUND_BLAST); // play this sound when we have a collision that doesn't result in death
+                }
+                setDead(); // allow the projectile to be removed
+                return true; // return true because of the collision
             }
-            ptr++;
+            ptr++; // move to the next alien (if no collision)
         }
     }
     return false;

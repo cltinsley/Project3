@@ -25,7 +25,6 @@ public:
     virtual ~Actor() {}
     virtual void doSomething() = 0;
     virtual void decreaseHP(double amount) {} // by default actors have no HP so this does nothing
-    virtual bool canCollide() { return false; } // by default, actors cannot collide with each other
     virtual bool isAlien() { return false; } // by default, actors are not aliens
     
     
@@ -36,7 +35,7 @@ public:
     bool didCollide(Actor& other); //returns true when the actor is within collision distance from other
     
 private:
-    bool m_alive; // keeps track of whether or not the given actor is alive (should it be displayed)
+    bool m_alive; // keeps track of whether or not the given actor is alive
     StudentWorld* m_world; // pointer to the world that the actor exists in
     
 };
@@ -71,7 +70,6 @@ public:
     virtual void doSomething() = 0; // different ships do different things
     
     virtual void kill() {}
-    virtual bool canCollide() { return true; } // ships can collide with each other and other objects
     double getHP() { return m_hp; } // returns ship's current hp
     double getMaxHP() { return m_maxHP; }
     void setHP(double maxHP);
@@ -187,33 +185,34 @@ public:
 // PROJECTILE definition -----------------------------------------------------------------------
 class Projectile : public Actor {
 public:
-    Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage);
+    Projectile(int imageID, double x, double y, StudentWorld* world, int moveDist, int dir, int damage, bool rotates);
     virtual void doSomething();
     bool checkCollision(int damage);
 private:
     int m_moveDist; // holds the number of pixels the projectile moves per turn (negative if it goes left)
     int m_damage; // stores how much damage the projectile does
+    bool m_rotates; // keeps track of whether the projectile rotates
 };
 
 // CABBAGE definition -----------------------------------------------------------------------
 class Cabbage : public Projectile {
 public:
     Cabbage(double x, double y, StudentWorld* world) :
-    Projectile(IID_CABBAGE, x, y, world, 8, 0, 2) { }
+    Projectile(IID_CABBAGE, x, y, world, 8, 0, 2, true) { }
 };
 
 // TURNIP definition -----------------------------------------------------------------------
 class Turnip : public Projectile {
 public:
     Turnip(double x, double y, StudentWorld* world) :
-    Projectile(IID_TURNIP, x, y, world, -6, 0, 2) { }
+    Projectile(IID_TURNIP, x, y, world, -6, 0, 2, true) { }
 };
 
 // TORPEDO definition -----------------------------------------------------------------------
 class Torpedo : public Projectile {
 public:
     Torpedo(double x, double y, int moveSpeed, int direction, StudentWorld* world) :
-    Projectile(IID_TORPEDO, x, y, world, moveSpeed, direction, 8) { }
+    Projectile(IID_TORPEDO, x, y, world, moveSpeed, direction, 8, false) { }
 };
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
